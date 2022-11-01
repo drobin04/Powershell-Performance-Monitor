@@ -1,6 +1,11 @@
 ﻿cls #Clear any previous messages or script echo in powershell window....
-#IMPORTANT - Configure refresh interval / frequency to record values below, in number of seconds. 
+#CONFIGURE - Configure refresh interval / frequency to record values below, in number of seconds. 
 $refreshinterval = 3
+
+#CONFIGURE - Enter your Router's IP address below. This should be something like 192.168.1.1 , or 192.168.0.1, or 192.168.100.1
+#          - You can find it by running the command IPConfig and checking the Default Gateway value.
+$routerIP = "192.168.100.1"
+
 
 # This is important to import System.Data.SQLite DLL file properly, don't remove this line - 
 $pathfordll = $PSScriptRoot
@@ -14,12 +19,18 @@ $pathfordll = $PSScriptRoot
 # NOTE - If script fails to run because 'running scripts is disabled on this system', right click your start menu 
 # button and launch powershell as an admin. Then run ' Set-ExecutionPolicy Unrestricted ' and try again.
 
+#Get unique filename for files to be saved as
+$dbname = [GUID]::NewGuid().ToString()
+$dbpath = "$($pathfordll)\results\$($dbname).s3db"
+$csvpath = "$($pathfordll)\results\$($dbname).csv"
+
+#Start CSV File
+$csv = "date/time,CPUusage,RemainingFreeRAM,GPUusage,GPUMemoryUsed,routerping,googleping" | Out-File $csvpath
+
 #Import Sqlite DLL file / assembly
 Add-Type -Path "$($pathfordll)\System.Data.SQLite.dll"
-$dbname = [GUID]::NewGuid().ToString()
 
 #Create database
-$dbpath = "$($pathfordll)\results\$($dbname).s3db"
 [System.Data.SQLite.SQLiteConnection]::CreateFile($dbpath)
 $sDatabaseConnectionString=[string]::Format("data source={0}",$dbpath)
 $oSQLiteDBConnection = New-Object System.Data.SQLite.SQLiteConnection
@@ -27,7 +38,7 @@ $oSQLiteDBConnection.ConnectionString = $sDatabaseConnectionString
 $oSQLiteDBConnection.open()
 #Create table(s)
 $oSQLiteDBCommand=$oSQLiteDBConnection.CreateCommand()
-$oSQLiteDBCommand.Commandtext="create table PerformanceStats (cpu int, gpu int, memoryfree int, GPUMemoryUsed int, timestamp datetime)"
+$oSQLiteDBCommand.Commandtext="create table PerformanceStats (cpu int, gpu int, memoryfree int, GPUMemoryUsed int, timestamp datetime,routerping int,googleping int)"
 #$oSQLiteDBCommand.Commandtext
 $oSQLiteDBCommand.CommandType = [System.Data.CommandType]::Text
 $oSQLiteDBCommand.ExecuteNonQuery()
@@ -51,17 +62,29 @@ $GpuUseTotal = (((Get-Counter "\GPU Engine(*engtype_3D)\Utilization Percentage")
 $GpuMemTotal = $GpuMemTotal / 1024
 $GpuMemTotal = [math]::Round($GpuMemTotal / 1024) #divide GPU mem value down to MB
 $GpuUseTotal = [math]::Round($GpuUseTotal)
-$results = "CPU: $cpu %, RAM: $ram MB Free, GPU Usage: $GpuUseTotal % , GPU Mem Usage: $GpuMemTotal MB"
+
+$googleping = (Test-Connection -ComputerName 8.8.8.8 -Count 1).ResponseTime
+$routerping = (Test-Connection -ComputerName $routerIP -Count 1).ResponseTime
+
+$results = "CPU: $cpu %, RAM: $ram MB Free, GPU Usage: $GpuUseTotal % , GPU Mem Usage: $GpuMemTotal MB, Router Ping: $routerping ms, Google Ping: $googleping ms"
 $results
 
+
+
+
 #Time to insert into DB. 
-$sqlinsert = "INSERT INTO PerformanceStats (cpu, gpu, memoryfree, GPUMemoryUsed, timestamp) VALUES ($cpu , $GpuUseTotal , $ram , $GpuMemTotal ,CURRENT_TIMESTAMP)"
+$sqlinsert = "INSERT INTO PerformanceStats (cpu, gpu, memoryfree, GPUMemoryUsed, timestamp,routerping,googleping) VALUES ($cpu , $GpuUseTotal , $ram , $GpuMemTotal ,CURRENT_TIMESTAMP,$routerping,$googleping)"
 $oSQLiteDBCommand=$con.CreateCommand()
 $oSQLiteDBCommand.Commandtext=$sqlinsert
 #$oSQLiteDBCommand.Commandtext
 $oSQLiteDBCommand.CommandType = [System.Data.CommandType]::Text
 $oSQLiteDBCommand.ExecuteNonQuery()
 $con.Close()
+
+#Time to insert new line to CSV file as well
+
+$csv = "$(Get-Date),$cpu , $ram , $GpuUseTotal , $GpuMemTotal,$routerping,$googleping"
+Add-Content $csvpath $csv
 
 start-sleep -seconds $refreshinterval
 }
