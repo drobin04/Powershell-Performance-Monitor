@@ -41,7 +41,7 @@ $oSQLiteDBCommand=$oSQLiteDBConnection.CreateCommand()
 $oSQLiteDBCommand.Commandtext="create table PerformanceStats (cpu int, gpu int, memoryfree int, GPUMemoryUsed int, timestamp datetime,routerping int,googleping int)"
 #$oSQLiteDBCommand.Commandtext
 $oSQLiteDBCommand.CommandType = [System.Data.CommandType]::Text
-$oSQLiteDBCommand.ExecuteNonQuery()
+$suppressvariable = $oSQLiteDBCommand.ExecuteNonQuery()
 $oSQLiteDBConnection.Close() #Close db for now to write file to disk; unsure when script will be stopped so will repeatedly open/close file.
 
 "Monitoring started; Control+C at any time to stop..."
@@ -78,7 +78,7 @@ $oSQLiteDBCommand=$con.CreateCommand()
 $oSQLiteDBCommand.Commandtext=$sqlinsert
 #$oSQLiteDBCommand.Commandtext
 $oSQLiteDBCommand.CommandType = [System.Data.CommandType]::Text
-$oSQLiteDBCommand.ExecuteNonQuery()
+$suppressvariable = $oSQLiteDBCommand.ExecuteNonQuery()
 $con.Close()
 
 #Time to insert new line to CSV file as well
@@ -88,3 +88,7 @@ Add-Content $csvpath $csv
 
 start-sleep -seconds $refreshinterval
 }
+
+# Reference
+# ' $suppressvariable = ' is placed before the SQLite ExecuteNonQuery statements, to stop it from entering lines of extra text into the powershell output.
+# This was done to stop stray 0 and 1 values showing up in the result lines. For example https://imgur.com/goCufiP
