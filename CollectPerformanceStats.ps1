@@ -2,10 +2,8 @@
 #CONFIGURE - Configure refresh interval / frequency to record values below, in number of seconds. 
 $refreshinterval = 3
 
-#CONFIGURE - Enter your Router's IP address below. This should be something like 192.168.1.1 , or 192.168.0.1, or 192.168.100.1
-#          - You can find it by running the command IPConfig and checking the Default Gateway value.
-$routerIP = "192.168.100.1"
-
+# Automatically determine Router's IP Address by checking next 'hop' from PC to WAN / internet.
+$routerIP = (Get-NetRoute "0.0.0.0/0").NextHop[0]
 
 # This is important to import System.Data.SQLite DLL file properly, don't remove this line - 
 $pathfordll = $PSScriptRoot
@@ -23,6 +21,12 @@ $pathfordll = $PSScriptRoot
 $dbname = [GUID]::NewGuid().ToString()
 $dbpath = "$($pathfordll)\results\$($dbname).s3db"
 $csvpath = "$($pathfordll)\results\$($dbname).csv"
+
+#Check if results folder exists, if not, create
+If(!(test-path -PathType container "$pathfordll\results"))
+{
+      $suppressvariable = New-Item -ItemType Directory -Path "$pathfordll\results"
+}
 
 #Start CSV File
 $csv = "date/time,CPUusage,RemainingFreeRAM,GPUusage,GPUMemoryUsed,routerping,googleping" | Out-File $csvpath
