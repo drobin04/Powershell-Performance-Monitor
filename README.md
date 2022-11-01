@@ -20,3 +20,10 @@ https://i.imgur.com/hxnQ3ql.png
 https://i.imgur.com/aAXTxJM.png
 
 https://i.imgur.com/0CQdbcR.png
+
+# Useful tools
+
+To view the results in a database format that can be queried, you will need to use an application that can view SQLite database files (s3db files). 
+You can use SQLite Administrator console for this, available from this URL: http://sqliteadmin.orbmu2k.de/
+
+Using this, you can open the results .s3db file, and run SQL queries, such as ' Select * From PerformanceStats Order By cpu desc ' to produce the following results - https://i.imgur.com/K96DXQI.png
