@@ -1,6 +1,8 @@
 ﻿cls #Clear any previous messages or script echo in powershell window....
 #CONFIGURE - Configure refresh interval / frequency to record values below, in number of seconds. 
 $refreshinterval = 3
+$UseNewDatabaseFiles = 0 # SET THIS TO 1 IF YOU WANT EACH RUN TO SET UP NEW RESULTS FILES. LEAVE AS IS IF YOU WANT THEM ALL SAVED TO THE SAME FILE.
+
 
 # Automatically determine Router's IP Address by checking next 'hop' from PC to WAN / internet.
 $routerIP = (Get-NetRoute "0.0.0.0/0").NextHop[0]
@@ -19,7 +21,15 @@ $pathfordll = $PSScriptRoot
 
 #Get unique filename for files to be saved as
 $dbname = [GUID]::NewGuid().ToString()
-$dbpath = "$($pathfordll)\results\$($dbname).s3db"
+
+If ($UseNewDatabaseFiles -eq 1) {
+      
+      $dbpath = "$($pathfordll)\results\$($dbname).s3db"
+      } else {$dbpath = "$($pathfordll)\results.s3db"}
+$dbname
+$dbpath
+
+
 $csvpath = "$($pathfordll)\results\$($dbname).csv"
 
 #Check if results folder exists, if not, create
