@@ -9,6 +9,13 @@ Extract the contents of this repository, right click CollectPerformanceStats.ps1
 
 Edit the script to configure it for whether it should re-use the same Results.s3db file, or whether it should always generate a new results file under a 'results' folder.
 
+In order to display the results in a webpage, if interested, you'll need to install a webserver, including PHP. 
+You can do this with Xampp - https://www.apachefriends.org/download.html
+
+Install the app, and then place this set of files in the main directory, c:\xampp\
+
+You can then view the monitor in a web browser by opening localhost/ or by navigating to your machine's IP address in a web browser. 
+
 # Requirements
 
 If the script fails to run, you may need to update or download the appropriate System.Data.SQLite.dll file in this directory for this script to work. One should be included, but if it doesn't work on your system, you can download them from this URL: https://system.data.sqlite.org/index.html/doc/trunk/www/downloads.wiki
