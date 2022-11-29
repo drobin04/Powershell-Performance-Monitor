@@ -1,6 +1,6 @@
 ﻿cls #Clear any previous messages or script echo in powershell window....
 #CONFIGURE - Configure refresh interval / frequency to record values below, in number of seconds. 
-$refreshinterval = 3
+$refreshinterval = 1
 $UseNewDatabaseFiles = 0 # SET THIS TO 1 IF YOU WANT EACH RUN TO SET UP NEW RESULTS FILES. LEAVE AS IS IF YOU WANT THEM ALL SAVED TO THE SAME FILE.
 
 
@@ -79,11 +79,16 @@ $GpuUseTotal = [math]::Round($GpuUseTotal)
 
 $googleping = (Test-Connection -ComputerName 8.8.8.8 -Count 1).ResponseTime
 $routerping = (Test-Connection -ComputerName $routerIP -Count 1).ResponseTime
-
+If($routerping -eq $null){
+    [console]::beep(1000,500)
+    $routerping = 999
+}
+If($googleping -eq $null){
+    [console]::beep(1000,500)
+    $googleping = 999
+}
 $results = "CPU: $cpu %, RAM: $ram MB Free, GPU Usage: $GpuUseTotal % , GPU Mem Usage: $GpuMemTotal MB, Router Ping: $routerping ms, Google Ping: $googleping ms"
 $results
-
-
 
 
 #Time to insert into DB. 
