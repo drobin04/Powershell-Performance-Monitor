@@ -45,6 +45,7 @@ $csv = "date/time,CPUusage,RemainingFreeRAM,GPUusage,GPUMemoryUsed,routerping,go
 Add-Type -Path "$($pathfordll)\System.Data.SQLite.dll"
 
 #Create database
+Try{
 [System.Data.SQLite.SQLiteConnection]::CreateFile($dbpath)
 $sDatabaseConnectionString=[string]::Format("data source={0}",$dbpath)
 $oSQLiteDBConnection = New-Object System.Data.SQLite.SQLiteConnection
@@ -57,16 +58,18 @@ $oSQLiteDBCommand.Commandtext="create table PerformanceStats (cpu int, gpu int, 
 $oSQLiteDBCommand.CommandType = [System.Data.CommandType]::Text
 $suppressvariable = $oSQLiteDBCommand.ExecuteNonQuery()
 $oSQLiteDBConnection.Close() #Close db for now to write file to disk; unsure when script will be stopped so will repeatedly open/close file.
+}catch{}
 
 "Monitoring started; Control+C at any time to stop..."
-
-while (1 -eq 1){
 #Initialize db variable
 $con = New-Object -TypeName System.Data.SQLite.SQLiteConnection
 $con.ConnectionString = "Data Source=$dbpath"
 $con.Open() #DB file is open, will collect data, then write to it.
+while ($true){
+
 
 #Collect Performance stats 
+$PerfStatTime = Measure-Command {
 $d1 = Get-Counter '\Memory\Available MBytes' #Free RAM
 $d2 = Get-Counter '\Processor(_Total)\% Processor Time' #CPU Usage
 $ram = $d1.CounterSamples.CookedValue #Filter ram value from larger property set
@@ -76,18 +79,19 @@ $GpuUseTotal = (((Get-Counter "\GPU Engine(*engtype_3D)\Utilization Percentage")
 $GpuMemTotal = $GpuMemTotal / 1024
 $GpuMemTotal = [math]::Round($GpuMemTotal / 1024) #divide GPU mem value down to MB
 $GpuUseTotal = [math]::Round($GpuUseTotal)
+}
 
 $googleping = (Test-Connection -ComputerName 8.8.8.8 -Count 1).ResponseTime
 $routerping = (Test-Connection -ComputerName $routerIP -Count 1).ResponseTime
 If($routerping -eq $null){
-    [console]::beep(1000,500)
+    [console]::beep(500,500)
     $routerping = 999
 }
 If($googleping -eq $null){
-    [console]::beep(1000,500)
+    [console]::beep(500,500)
     $googleping = 999
 }
-$results = "CPU: $cpu %, RAM: $ram MB Free, GPU Usage: $GpuUseTotal % , GPU Mem Usage: $GpuMemTotal MB, Router Ping: $routerping ms, Google Ping: $googleping ms"
+$results = "CPU: $cpu %, RAM: $ram MB Free, GPU Usage: $GpuUseTotal % , GPU Mem Usage: $GpuMemTotal MB, Router Ping: $routerping ms, Google Ping: $googleping ms, PerfStatTime - " + $PerfStatTime.Milliseconds
 $results
 
 
@@ -98,16 +102,15 @@ $oSQLiteDBCommand.Commandtext=$sqlinsert
 #$oSQLiteDBCommand.Commandtext
 $oSQLiteDBCommand.CommandType = [System.Data.CommandType]::Text
 $suppressvariable = $oSQLiteDBCommand.ExecuteNonQuery()
-$con.Close()
+
 
 #Time to insert new line to CSV file as well
 
 $csv = "$(Get-Date),$cpu , $ram , $GpuUseTotal , $GpuMemTotal,$routerping,$googleping"
 Add-Content $csvpath $csv
-
-start-sleep -seconds $refreshinterval
+#start-sleep -Seconds $refreshinterval
 }
-
+$con.Close()
 # Reference
 # ' $suppressvariable = ' is placed before the SQLite ExecuteNonQuery statements, to stop it from entering lines of extra text into the powershell output.
 # This was done to stop stray 0 and 1 values showing up in the result lines. For example https://imgur.com/goCufiP
