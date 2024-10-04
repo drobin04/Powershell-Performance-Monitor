@@ -1,7 +1,7 @@
 # Powershell Performance Monitor
- Powershell script that collects performance stats and saves into a sqlite database.
+Powershell script that collects performance stats, outputs them to a console and also saves into a sqlite database.
 
-Useful for quickly tracking CPU, memory usage / free, GPU usage, GPU memory usage, network quality while running a video game or other app.
+Useful for quickly troubleshooting CPU, memory usage / free, GPU usage, GPU memory usage, network quality while running another application.
 
 # Setup
 
